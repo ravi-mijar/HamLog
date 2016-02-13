@@ -1,0 +1,4 @@
+com/hamlog/qso/QSO.class
+com/hamlog/user/HamOperator.class
+test/com/hamlog/operations/ORMTest.class
+com/hamlog/operations/HamLog.class
