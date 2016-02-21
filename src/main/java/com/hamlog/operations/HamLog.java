@@ -22,11 +22,13 @@ public class HamLog
     private static SessionFactory sessionFactory = null;
     private HamLog()
     {
-        sessionFactory = new Configuration().configure().buildSessionFactory();
+        
     }
     
     public static SessionFactory getSessionFactory()
     {
+        if(sessionFactory == null)
+            sessionFactory = new Configuration().configure().buildSessionFactory();
         return sessionFactory;
     }
     
@@ -57,18 +59,15 @@ public class HamLog
          * rollback, Hibernate automatically unbinds the org.hibernate.Session from the thread and closes it for you. 
          * If you call getCurrentSession() again, you get a new org.hibernate.Session and can start a new unit of work. 
          */
-        session.beginTransaction();
-        ArrayList<HamOperator> hams = new ArrayList(session.createQuery("select * from ham_operator").list());
-        int pos; 
-        if((pos = hams.indexOf(dummy)) != -1)
+        HamOperator existingHam = searchHam(withCallSign);
+        if(existingHam != null)
         {
-            dummy = hams.get(pos);
+            dummy = existingHam;
         }
         else
         {
             dummy.setCountry("India");
             dummy.setHandle(withCallSign);
-            session.save(dummy);
             
             //find a way to generate another set of text fields on UI to fetch the handle from the user.
             //dummy.setHandle(handle);
@@ -77,8 +76,9 @@ public class HamLog
         dateObj = DateFormat.getDateInstance().parse(date);
         System.out.println(dateObj);
         
-        session.save(new QSO(dateObj, dummy, txPower, rst));
-        session.close();
+        session.beginTransaction();
+        session.saveOrUpdate(new QSO(dateObj, dummy, txPower, rst));
+        session.getTransaction().commit();
         
         return true;
     }
@@ -99,13 +99,12 @@ public class HamLog
         else {
             Session session = getSessionFactory().getCurrentSession();
             session.beginTransaction();
-            ArrayList<HamOperator> qso = new ArrayList<HamOperator>(session.createQuery("select * from qso where qso.with_call_sign='"+withCallSign+"'").list());
+            ArrayList<HamOperator> qso = new ArrayList<HamOperator>(session.createQuery("from QSO where QSO.qsoWithHam='"+withCallSign+"'").list());
             if(qso.size() == 0)
             {
                 System.out.println("No QSOs found with this Ham.");
             }
             else System.out.println(qso);
-            session.close();
         }
         return true;
     }
@@ -118,8 +117,10 @@ public class HamLog
             Session session = getSessionFactory().getCurrentSession();
             session.beginTransaction();
             HamOperator newHam = new HamOperator(callSign, handle, country);
-            session.save(newHam);
-            session.close();
+            
+            session.persist(newHam);
+            
+            session.getTransaction().commit();
         }
         else 
         {
@@ -130,22 +131,24 @@ public class HamLog
         return true;
     }
     
-    protected HamOperator searchHam(String callSign)
+    @Command
+    public HamOperator searchHam(String callSign)
     {
         HamOperator dummy = new HamOperator(callSign);
         //check whether we already have a HamOperator instance.
         Session session = getSessionFactory().getCurrentSession();
-        session.getTransaction().begin();
-        ArrayList<HamOperator> hams = new ArrayList<HamOperator>(session.createQuery("select from ham_operator").list());
-        int pos; 
-        if((pos = hams.indexOf(dummy)) != 0)
+        session.beginTransaction();
+        ArrayList<HamOperator> hams = new ArrayList<HamOperator>(session.createQuery("from HamOperator").list());
+        System.out.println("hams:" + hams);
+        int pos = hams.indexOf(dummy); 
+        System.out.println("pos:" + pos);
+        if(pos == 0)
         {
             dummy = hams.get(pos);
-            session.close();
-            return dummy;
+            System.out.println("dummy:" + dummy);
         }
-        session.close();
-        return null;
+        else dummy = null;
+        return dummy;
     }
 
     public static void main(String args[])
@@ -159,5 +162,12 @@ public class HamLog
         {
             e.printStackTrace();
         }
+        System.out.println("am I here early?");
+        if(!HamLog.getSessionFactory().isClosed())
+        {
+            HamLog.getSessionFactory().getCurrentSession().close();
+            HamLog.getSessionFactory().close();
+        }
+        instance = null;
     }
 }

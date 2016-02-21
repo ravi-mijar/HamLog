@@ -67,9 +67,19 @@ public class HamOperator implements Comparable<HamOperator>
     }
     
     @Override
+    public boolean equals(Object o) 
+    {
+        return (this.callSign.equalsIgnoreCase(((HamOperator)o).getCallSign()) ? true : false);
+    }
+    
+    @Override
     public int compareTo(HamOperator o)
     {
-        return (this.callSign.equalsIgnoreCase(o.callSign)) ? 0 : 1;
+        System.out.println("object received: " + o);
+        System.out.println("this: " + this);
+        System.out.println(o.callSign);
+        System.out.println(this.callSign);
+        return (this.callSign.equalsIgnoreCase(o.callSign) ? 0 : -1);
     }
     
 }

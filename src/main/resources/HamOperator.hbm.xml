@@ -2,8 +2,8 @@
 <!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
  "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 
-<hibernate-mapping package="com.hamlog.user">
-	<class name="HamOperator" table="ham_operator">
+<hibernate-mapping>
+	<class name="com.hamlog.user.HamOperator" table="ham_operator">
 	 
 	     <id name="callSign" column="call_sign">
 	     </id>
